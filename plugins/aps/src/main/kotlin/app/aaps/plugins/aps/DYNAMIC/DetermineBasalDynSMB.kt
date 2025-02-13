@@ -48,7 +48,7 @@ class DetermineBasalDynSMB @Inject constructor(
 ) {
     @Inject lateinit var tirCalculator: TirCalculator
 
-
+// openapsaimi settings
     private var StapRetentie: Int = 0
 
     private var SMBWachtTrigger: Long = System.currentTimeMillis()/(60 * 1000)
@@ -324,7 +324,6 @@ class DetermineBasalDynSMB @Inject constructor(
     }
 
 
-
     // Functie om te controleren of de huidige tijd binnen het tijdsbereik valt
     fun isInTijdBereik(hh: Int, mm: Int, startUur: Int, startMinuut: Int, eindUur: Int, eindMinuut: Int): Boolean {
         val startInMinuten = startUur * 60 + startMinuut
@@ -372,8 +371,6 @@ class DetermineBasalDynSMB @Inject constructor(
             consoleError.add("SMB altijd geactiveerd")
             return true
         }
-
-
 
         // enable SMB/UAM (if enabled in preferences) if a low temptarget is set
         if (true && (profile.temptargetSet && target_bg < 100)) {
@@ -446,8 +443,7 @@ class DetermineBasalDynSMB @Inject constructor(
             consoleError = consoleError
         )
 
- // Dag - Nacht
-
+    // Dag - Nacht
         val (uurVanDag,minuut) = refreshTime()
         val minuutTxt = String.format("%02d", minuut)
 
@@ -523,8 +519,6 @@ class DetermineBasalDynSMB @Inject constructor(
         log_DagNacht +=  " ● Tijd: " + uurVanDag.toString() + ":" + minuutTxt + " → Deel v/d Dag = " + DeelvanDag + "\n"
         log_DagNacht +=  " \n"
 
-
-
      val    DeelvanDag_factor = when {
             isOchtend -> profile.bg_PercOchtend.toDouble() / 100
             isMiddag -> profile.bg_PercMiddag.toDouble() / 100
@@ -548,7 +542,7 @@ class DetermineBasalDynSMB @Inject constructor(
         val deliverAt = currentTime
 
         // TODO eliminate
-        val profile_current_basal = round_basal(profile.current_basal * resistentie_basal_factor)
+        val profile_current_basal = round_basal(profile.current_basal) // * resistentie_basal_factor)
         var basal = profile_current_basal
 
         // TODO eliminate
@@ -578,8 +572,6 @@ class DetermineBasalDynSMB @Inject constructor(
             rT.rate = basal
             return rT
         }
-
-
 
         // 38 is an xDrip error state that usually indicates sensor failure
         // all other BG values between 11 and 37 mg/dL reflect non-error-code BG values, so we should zero temp for those
@@ -619,20 +611,17 @@ class DetermineBasalDynSMB @Inject constructor(
         var min_bg = profile.min_bg
         var max_bg = profile.max_bg
 
-
-
-
-
         basal = profile.current_basal  * resistentie_basal_factor
         basal = round_basal(basal)
-        if (basal != profile_current_basal)
-            consoleLog.add("Adjusting basal from $profile_current_basal to $basal; ")
-        else
-            consoleLog.add("Basal unchanged: $basal; ")
+        if (basal != profile_current_basal) {
+           log_BasalCorr += " → basaal van: " + round(profile_current_basal,2) + "eh/u naar:" + round(basal,2) + "eh/u" + "\n"
+        } else {
+           log_BasalCorr += " → basaal ongewijzigd: " + round(basal,2) + "eh/u" + "\n"
+        }
 
         // adjust min, max, and target BG for sensitivity, such that 50% increase in ISF raises target from 100 to 120
         if (profile.temptargetSet) {
-            //console.log("Temp Target set, not adjusting with autosens; ");
+
         } else {
             if (false && autosens_data.ratio < 1 || false && autosens_data.ratio > 1) {
                 // with a target of 100, default 0.7-1.2 autosens min/max range would allow a 93-117 target range
@@ -650,9 +639,6 @@ class DetermineBasalDynSMB @Inject constructor(
 
             }
         }
-    //    val target_profiel = target_bg
-
-
 
 // Stappen
         var log_Stappen = " ﴿ Stappen ﴾" + "\n"
@@ -690,7 +676,6 @@ class DetermineBasalDynSMB @Inject constructor(
                     StapRetentie = StapRetentie -1
 
                 } // Verlaag actieve duur als deze nog actief is
-
             }
 
             // Verhoog target
@@ -704,15 +689,10 @@ class DetermineBasalDynSMB @Inject constructor(
                     log_Stappen += " ● nog $StapRetentie * retentie → Insuline perc. $stap_perc %.\n"
                     target_bg += 9
                 }
-
-
             } else {
                 stap_perc = 100f
                 log_Stappen += " ● Geen activiteit → Insuline perc. $stap_perc %.\n"
-
             }
-
-
         } else {
             log_Stappen += " ● Stappen correctie uitgeschakeld.\n"
         }
@@ -792,8 +772,6 @@ class DetermineBasalDynSMB @Inject constructor(
             Persistent_info = " ● Bg niet Persistent hoog → perc = 100%"
         }
 
-
-
         var log_BgIOB = " ﴿ Bg - IOB ﴾" + "\n"
 
         var Bg_ISF_perc: Double
@@ -812,7 +790,6 @@ class DetermineBasalDynSMB @Inject constructor(
         log_BgIOB +=  " ● IOB = " + round(iob_data.iob,2) + " → IOB Cf = " + round(Cf_IOB,2) + "\n"
         log_BgIOB +=  " ● Deel v/d dag = " + DeelvanDag + " → Cf = " + round(DeelvanDag_factor,2) + "\n"
         log_BgIOB +=  " ● Bg/IOB corr eff = " + Display_Bg_ISF_perc + "%" + "\n"
-
 
         // UAM-boost Bg en hypo correctie en IOB correctie
 
@@ -849,8 +826,6 @@ class DetermineBasalDynSMB @Inject constructor(
             log_UAMBoost +=  " ● Bg correctie = " + round(Cf_UAMBoost_Bg,2) + "\n"
             log_UAMBoost +=  " ● IOB correctie = " + round(Cf_IOB,2) + "\n"
 
-
-
         } else {
             if (delta15 < 0 && !isNacht) {
                 uam_boost_percentage = 100.0 + (delta15 * 2.5).coerceIn(-50.0, 0.0)
@@ -870,7 +845,6 @@ class DetermineBasalDynSMB @Inject constructor(
             }
 
             log_UAMBoost += " ● UAM-Boost perc = " + display_UAM_Perc + "%" + "\n"
-
         }
 
         //einde code nieuwe uam-boost
@@ -887,9 +861,7 @@ class DetermineBasalDynSMB @Inject constructor(
         }
         log_hypo += "\n"
 
-
         // einde hypo correctie
-
 
 
 // IOB - BG code
@@ -903,8 +875,6 @@ class DetermineBasalDynSMB @Inject constructor(
             log_BG_IOB += " ● Geen ↑Bg ↓IOB corr. → perc = " + BG_IOB_percentage.toString() +"%"
         }
         log_BG_IOB += "\n"
-
-
 
 
 // Einde IOB - Bg code
@@ -1037,7 +1007,6 @@ class DetermineBasalDynSMB @Inject constructor(
         val hypoperctxt = hypo_corr_percentage.toString()
 
 
-
         val headerRow = "datum,bg,isf,iob,delta15,delta15oud,Bgperc,maaltijdBoost,uamBoost,Bg_IOB,persistent,hypo,resistentie,stap,overall,smbF\n"
         val valuesToRecord = "$dateStr,$bg_act,$isf,$iob_act,$delta15txt,$delta15oudtxt,$BgFactortxt,$bolusBoosttxt,$uamBoosttxt,$BgIOBtxt,$persBoosttxt,$hypoperctxt,$resistentietxt,$stapPerctxt,$overalltxt,$smbFactortxt"
 
@@ -1049,8 +1018,6 @@ class DetermineBasalDynSMB @Inject constructor(
 
 
 // einde log data in csv
-        //    consoleError.add("CR:${profile.carb_ratio}")
-
 
 
         //calculate BG impact: the amount BG "should" be rising or falling based on insulin activity alone
@@ -1082,7 +1049,7 @@ class DetermineBasalDynSMB @Inject constructor(
             val adjustedTargetBG = round(max(80.0, target_bg - (bg - target_bg) / 3.0), 0)
             val adjustedMaxBG = round(max(80.0, max_bg - (bg - max_bg) / 3.0), 0)
             // if eventualBG, naive_eventualBG, and target_bg aren't all above adjustedMinBG, don’t use it
-            //console.error("naive_eventualBG:",naive_eventualBG+", eventualBG:",eventualBG);
+
             if (eventualBG > adjustedMinBG && naive_eventualBG > adjustedMinBG && min_bg > adjustedMinBG) {
                 consoleLog.add("Adjusting targets for high BG: min_bg from $min_bg to $adjustedMinBG; ")
                 min_bg = adjustedMinBG
@@ -1117,7 +1084,6 @@ class DetermineBasalDynSMB @Inject constructor(
             }
         }
 
-        //console.error(reservoir_data);  
 
         rT = RT(
             algorithm = APSResult.Algorithm.SMB,
@@ -1134,8 +1100,6 @@ class DetermineBasalDynSMB @Inject constructor(
             consoleError = consoleError,
             variable_sens = sens // profile.variable_sens
         )
-
-
 
         // generate predicted future BGs based on IOB, COB, and current absorption rate
 
@@ -1155,7 +1119,6 @@ class DetermineBasalDynSMB @Inject constructor(
         // enable UAM (if enabled in preferences)
         val enableUAM = true
 
-        //console.error(meal_data);
         // carb impact and duration are 0 unless changed below
         var ci: Double
         val cid: Double
@@ -1178,7 +1141,6 @@ class DetermineBasalDynSMB @Inject constructor(
         // autotuned CR is still in effect even when basals and ISF are being adjusted by TT or autosens
         // this avoids overdosing insulin for large meals when low temp targets are active
         val csf = round(sens / 7.0,1)
-        //       consoleError.add("profile.sens: ${profile.sens}, sens: $sens, CSF: $csf")
 
         val maxCarbAbsorptionRate = 30 // g/h; maximum rate to assume carbs will absorb if no CI observed
         // limit Carb Impact to maxCarbAbsorptionRate * csf in mg/dL per 5m
@@ -1200,12 +1162,9 @@ class DetermineBasalDynSMB @Inject constructor(
             // so <= 90g is assumed to take 3h, and 120g=4h
             remainingCATimeMin = Math.max(remainingCATimeMin, meal_data.mealCOB / assumedCarbAbsorptionRate)
             val lastCarbAge = round((systemTime - meal_data.lastCarbTime) / 60000.0)
-            //console.error(meal_data.lastCarbTime, lastCarbAge);
-
             val fractionCOBAbsorbed = (meal_data.carbs - meal_data.mealCOB) / meal_data.carbs
             remainingCATime = remainingCATimeMin + 1.5 * lastCarbAge / 60
             remainingCATime = round(remainingCATime, 1)
-            //console.error(fractionCOBAbsorbed, remainingCATimeAdjustment, remainingCATime)
             consoleError.add("Last carbs " + lastCarbAge + "minutes ago; remainingCATime:" + remainingCATime + "hours;" + round(fractionCOBAbsorbed * 100) + "% carbs absorbed")
         }
 
@@ -1223,7 +1182,7 @@ class DetermineBasalDynSMB @Inject constructor(
         // area of the /\ triangle is the same as a remainingCIpeak-height rectangle out to remainingCATime/2
         // remainingCIpeak (mg/dL/5m) = remainingCarbs (g) * CSF (mg/dL/g) * 5 (m/5m) * 1h/60m / (remainingCATime/2) (h)
         val remainingCIpeak = remainingCarbs * csf * 5 / 60 / (remainingCATime / 2)
-        //console.error(profile.min_5m_carbimpact,ci,totalCI,totalCA,remainingCarbs,remainingCI,remainingCATime);
+
 
         // calculate peak deviation in last hour, and slope from that to current deviation
         val slopeFromMaxDeviation = round(meal_data.slopeFromMaxDeviation, 2)
@@ -1231,7 +1190,7 @@ class DetermineBasalDynSMB @Inject constructor(
         val slopeFromMinDeviation = round(meal_data.slopeFromMinDeviation, 2)
         // assume deviations will drop back down at least at 1/3 the rate they ramped up
         val slopeFromDeviations = Math.min(slopeFromMaxDeviation, -slopeFromMinDeviation / 3)
-        //console.error(slopeFromMaxDeviation);
+
 
         val aci = 10
         //5m data points = g * (1U/10g) * (40mg/dL/1U) / (mg/dL/5m)
@@ -1245,8 +1204,7 @@ class DetermineBasalDynSMB @Inject constructor(
         }
         val acid = max(0.0, meal_data.mealCOB * csf / aci)
         // duration (hours) = duration (5m) * 5 / 60 * 2 (to account for linear decay)
-        //      consoleError.add("Carb Impact: $ci mg/dL per 5m; CI Duration: ${round(cid * 5 / 60 * 2, 1)} hours; remaining CI (~2h peak): ${round(remainingCIpeak, 1)} mg/dL per 5m")
-        //console.error("Accel. Carb Impact:",aci,"mg/dL per 5m; ACI Duration:",round(acid*5/60*2,1),"hours");
+
         var minIOBPredBG = 999.0
         var minCOBPredBG = 999.0
         var minUAMPredBG = 999.0
@@ -1260,13 +1218,11 @@ class DetermineBasalDynSMB @Inject constructor(
         var IOBpredBG: Double = eventualBG
         var maxIOBPredBG = bg
         var maxCOBPredBG = bg
-        //var maxUAMPredBG = bg
-        //var maxPredBG = bg;
-        //var eventualPredBG = bg
+
         val lastIOBpredBG: Double
         var lastCOBpredBG: Double? = null
         var lastUAMpredBG: Double? = null
-        //var lastZTpredBG: Int
+
         var UAMduration = 0.0
         var remainingCItotal = 0.0
         val remainingCIs = mutableListOf<Int>()
@@ -1275,7 +1231,7 @@ class DetermineBasalDynSMB @Inject constructor(
         var COBpredBG: Double? = null
         var aCOBpredBG: Double?
         iobArray.forEach { iobTick ->
-            //console.error(iobTick);
+
             val predBGI: Double = round((-iobTick.activity * sens * 5), 2)
             val IOBpredBGI: Double = predBGI
 
@@ -1304,7 +1260,7 @@ class DetermineBasalDynSMB @Inject constructor(
             remainingCItotal += predCI + remainingCI
             remainingCIs.add(round(remainingCI))
             predCIs.add(round(predCI))
-            //console.log(round(predCI,1)+"+"+round(remainingCI,1)+" ");
+
             COBpredBG = COBpredBGs[COBpredBGs.size - 1] + predBGI + min(0.0, predDev) + predCI + remainingCI
             aCOBpredBG = aCOBpredBGs[aCOBpredBGs.size - 1] + predBGI + min(0.0, predDev) + predACI
             // for UAMpredBGs, predicted carb impact drops at slopeFromDeviations
@@ -1313,15 +1269,13 @@ class DetermineBasalDynSMB @Inject constructor(
             // if slopeFromDeviations is too flat, predicted deviation impact drops linearly from
             // current deviation down to zero over 3h (data points every 5m)
             val predUCImax = max(0.0, uci * (1 - UAMpredBGs.size / max(3.0 * 60 / 5, 1.0)))
-            //console.error(predUCIslope, predUCImax);
             // predicted CI from UAM is the lesser of CI based on deviationSlope or DIA
             val predUCI = min(predUCIslope, predUCImax)
             if (predUCI > 0) {
-                //console.error(UAMpredBGs.length,slopeFromDeviations, predUCI);
                 UAMduration = round((UAMpredBGs.size + 1) * 5 / 60.0, 1)
             }
             UAMpredBG = UAMpredBGs[UAMpredBGs.size - 1] + predUAMBGI + min(0.0, predDev) + predUCI
-            //console.error(predBGI, predCI, predUCI);
+
             // truncate all BG predictions at 4 hours
             if (IOBpredBGs.size < 48) IOBpredBGs.add(IOBpredBG)
             if (COBpredBGs.size < 48) COBpredBGs.add(COBpredBG!!)
@@ -1339,7 +1293,7 @@ class DetermineBasalDynSMB @Inject constructor(
             // add 30m to allow for insulin delivery (SMBs or temps)
             val insulinPeakTime = 90
             val insulinPeak5m = (insulinPeakTime / 60.0) * 12.0
-            //console.error(insulinPeakTime, insulinPeak5m, profile.insulinPeakTime, profile.curve);
+
 
             // wait 90m before setting minIOBPredBG
             if (IOBpredBGs.size > insulinPeak5m && (IOBpredBG < minIOBPredBG)) minIOBPredBG = round(IOBpredBG, 0)
@@ -1351,7 +1305,7 @@ class DetermineBasalDynSMB @Inject constructor(
             //if (enableUAM && UAMpredBG!! > maxIOBPredBG) maxUAMPredBG = UAMpredBG!!
         }
         // set eventualBG to include effect of carbs
-        //console.error("PredBGs:",JSON.stringify(predBGs));
+
         if (meal_data.mealCOB > 0) {
             consoleError.add("predCIs (mg/dL/5m):" + predCIs.joinToString(separator = " "))
             consoleError.add("remainingCIs:      " + remainingCIs.joinToString(separator = " "))
@@ -1448,7 +1402,6 @@ class DetermineBasalDynSMB @Inject constructor(
             minGuardBG = minIOBGuardBG
         }
         minGuardBG = round(minGuardBG, 0)
-        //console.error(minCOBGuardBG, minUAMGuardBG, minIOBGuardBG, minGuardBG);
 
         var minZTUAMPredBG = minUAMPredBG
         // if minZTGuardBG is below threshold, bring down any super-high minUAMPredBG by averaging
@@ -1468,8 +1421,7 @@ class DetermineBasalDynSMB @Inject constructor(
             minZTUAMPredBG = (minUAMPredBG + minZTGuardBG) / 2.0
         }
         minZTUAMPredBG = round(minZTUAMPredBG, 0)
-        //console.error("minUAMPredBG:",minUAMPredBG,"minZTGuardBG:",minZTGuardBG,"minZTUAMPredBG:",minZTUAMPredBG);
-        // if any carbs have been entered recently
+           // if any carbs have been entered recently
         if (meal_data.carbs != 0.0) {
 
             // if UAM is disabled, use max of minIOBPredBG, minCOBPredBG
@@ -1535,29 +1487,25 @@ class DetermineBasalDynSMB @Inject constructor(
         var minutesAboveThreshold = 240
         if (meal_data.mealCOB > 0 && (ci > 0 || remainingCIpeak > 0)) {
             for (i in COBpredBGs.indices) {
-                //console.error(COBpredBGs[i], min_bg);
-                if (COBpredBGs[i] < min_bg) {
+               if (COBpredBGs[i] < min_bg) {
                     minutesAboveMinBG = 5 * i
                     break
                 }
             }
             for (i in COBpredBGs.indices) {
-                //console.error(COBpredBGs[i], threshold);
-                if (COBpredBGs[i] < threshold) {
+               if (COBpredBGs[i] < threshold) {
                     minutesAboveThreshold = 5 * i
                     break
                 }
             }
         } else {
             for (i in IOBpredBGs.indices) {
-                //console.error(IOBpredBGs[i], min_bg);
-                if (IOBpredBGs[i] < min_bg) {
+               if (IOBpredBGs[i] < min_bg) {
                     minutesAboveMinBG = 5 * i
                     break
                 }
             }
             for (i in IOBpredBGs.indices) {
-                //console.error(IOBpredBGs[i], threshold);
                 if (IOBpredBGs[i] < threshold) {
                     minutesAboveThreshold = 5 * i
                     break
@@ -1567,7 +1515,6 @@ class DetermineBasalDynSMB @Inject constructor(
 
         if (enableSMB && minGuardBG < threshold) {
             consoleError.add("minGuardBG ${convert_bg(minGuardBG)} projected below ${convert_bg(threshold)} - disabling SMB")
-            //rT.reason += "minGuardBG "+minGuardBG+"<"+threshold+": SMB disabled; ";
             enableSMB = false
         }
         if (maxDelta > 0.20 * bg) {
@@ -1576,7 +1523,6 @@ class DetermineBasalDynSMB @Inject constructor(
             enableSMB = false
         }
 
-        //consoleError.add("BG projected to remain above ${convert_bg(min_bg)} for $minutesAboveMinBG minutes")
         if (minutesAboveThreshold < 240 || minutesAboveMinBG < 60) {
             consoleError.add("voorspelde BG boven ${convert_bg(threshold)} gedurende $minutesAboveThreshold minutes")
         }
@@ -1589,7 +1535,6 @@ class DetermineBasalDynSMB @Inject constructor(
         val COBforCarbsReq = max(0.0, meal_data.mealCOB - 0.25 * meal_data.carbs)
         val carbsReq = round(((bgUndershoot - zeroTempEffectDouble) / csf - COBforCarbsReq))
         val zeroTempEffect = round(zeroTempEffectDouble)
-        //consoleError.add("naive_eventualBG: $naive_eventualBG bgUndershoot: $bgUndershoot zeroTempDuration $zeroTempDuration zeroTempEffect: $zeroTempEffect carbsReq: $carbsReq")
         if (carbsReq >= 50 && minutesAboveThreshold <= 45) {
             rT.carbsReq = carbsReq
             rT.carbsReqWithin = minutesAboveThreshold
@@ -1613,7 +1558,7 @@ class DetermineBasalDynSMB @Inject constructor(
         }
 
         // if not in LGS mode, cancel temps before the top of the hour to reduce beeping/vibration
-        // console.error(profile.skip_neutral_temps, rT.deliverAt.getMinutes());
+
         val minutes = Instant.ofEpochMilli(rT.deliverAt!!).atZone(ZoneId.systemDefault()).toLocalDateTime().minute
         if (profile.skip_neutral_temps && minutes >= 55) {
             rT.reason.append("; Canceling temp at " + minutes + "m past the hour. ")
@@ -1653,7 +1598,7 @@ class DetermineBasalDynSMB @Inject constructor(
             if (minDelta < 0 && minDelta > expectedDelta) {
                 // if we're barely falling, newinsulinReq should be barely negative
                 val newinsulinReq = round((insulinReq * (minDelta / expectedDelta)), 2)
-                //console.error("Increasing insulinReq from " + insulinReq + " to " + newinsulinReq);
+
                 insulinReq = newinsulinReq
             }
             // rate required to deliver insulinReq less insulin over 30m:
@@ -1750,7 +1695,7 @@ class DetermineBasalDynSMB @Inject constructor(
             }
         } else { // otherwise, calculate 30m high-temp required to get projected BG down to target
             // insulinReq is the additional insulin required to get minPredBG down to target_bg
-            //console.error(minPredBG,eventualBG);
+
             var insulinReq = round((min(minPredBG, eventualBG) - target_bg) / sens, 2)
             // if that would put us over max_iob, then reduce accordingly
             if (insulinReq > max_iob - iob_data.iob) {
@@ -1763,8 +1708,6 @@ class DetermineBasalDynSMB @Inject constructor(
             rate = round_basal(rate)
             insulinReq = round(insulinReq, 3)
 
-
-
             rT.insulinReq = insulinReq
             //console.error(iob_data.lastBolusTime);
             //console.error(profile.temptargetSet, target_bg, rT.COB);
@@ -1774,17 +1717,14 @@ class DetermineBasalDynSMB @Inject constructor(
                 // never bolus more than maxSMBBasalMinutes worth of basal
                 val mealInsulinReq = round(meal_data.mealCOB / 7.0, 3)
                 if (iob_data.iob > mealInsulinReq && iob_data.iob > 0) {
-                //    consoleError.add("IOB ${iob_data.iob} > COB ${meal_data.mealCOB}; mealInsulinReq = $mealInsulinReq")
-                //    consoleError.add("profile.maxUAMSMBBasalMinutes: ${profile.maxUAMSMBBasalMinutes} profile.current_basal* resistentie_basal_factor: ${profile.current_basal}")
-                    maxBolus = round(profile.current_basal* resistentie_basal_factor * profile.maxUAMSMBBasalMinutes / 60, 1)
+                  maxBolus = round(profile.current_basal* resistentie_basal_factor * profile.maxUAMSMBBasalMinutes / 60, 1)
                 } else {
-                //    consoleError.add("profile.maxSMBBasalMinutes: ${profile.maxSMBBasalMinutes} profile.current_basal* resistentie_basal_factor: ${profile.current_basal}")
-                    maxBolus = round(profile.current_basal* resistentie_basal_factor * profile.maxSMBBasalMinutes / 60, 1)
+                  maxBolus = round(profile.current_basal* resistentie_basal_factor * profile.maxSMBBasalMinutes / 60, 1)
                 }
+
                 // bolus 1/2 the insulinReq, up to maxBolus, rounding down to nearest bolus increment
                 val roundSMBTo = 1 / profile.bolus_increment
                 var microBolus = Math.floor(Math.min(smb_factor * insulinReq / 2, maxBolus) * roundSMBTo) / roundSMBTo
-
 
                 // calculate a long enough zero temp to eventually correct back up to target
                 val smbTarget = target_bg
@@ -1819,11 +1759,10 @@ class DetermineBasalDynSMB @Inject constructor(
 
                 // seconds since last bolus
                 val lastBolusAge = (systemTime - iob_data.lastBolusTime) / 1000.0
-                //console.error(lastBolusAge);
+
                 // allow SMBIntervals between 1 and 10 minutes
                 val SMBInterval = min(10, max(1, profile.SMBInterval)) * 60.0   // in seconds
-                //console.error(naive_eventualBG, insulinReq, worstCaseInsulinReq, durationReq);
-              // consoleError.add("naive_eventualBG $naive_eventualBG,${durationReq}m ${smbLowTempReq}U/h temp needed; last bolus ${round(lastBolusAge / 60.0, 1)}m ago; maxBolus: $maxBolus")
+
                 if (lastBolusAge > SMBInterval - 6.0) {   // 6s tolerance
                     if (microBolus > 0) {
                         rT.units = microBolus
